@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Adoption</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>''
+<body>
+    <h1>Lista de Pets para Adoção</h1>
+    <div class="container">
+        {% for pet in pets %}
+            <div class="card">
+                <h2>{{ pet.name }}</h2>
+                <p><strong>Espécie:</strong> {{ pet.species }}</p>
+                <p><strong>Idade:</strong> {{ pet.age }} anos</p>
+                <p><strong>Favorito:</strong> <span class="favorite-status">{{ "Sim" if pet.is_favorite else "Não" }}</span></p>
+                <p><strong>Adotado:</strong> {{ "Sim" if pet.is_adopted else "Não" }}</p>
+                
+                <!-- Botão de favoritar com ícone de coração -->
+                <span class="heart {{ 'favorited' if pet.is_favorite else '' }}" 
+                      data-id="{{ pet.id }}" onclick="toggleFavorite(this)">&#x2665;</span>
+                
+                {% if not pet.is_adopted %}
+                    <!-- Formulário para adoção -->
+                    <form action="{{ url_for('adopt_pet', pet_id=pet.id) }}" method="post">
+                        <button type="submit" class="adopt-btn">Adotar</button>
+                    </form>
+                {% else %}
+                    <span class="adopted">Já adotado</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+    
+    <script>
+        const API_BASE_URL = "http://127.0.0.1:5000"; // Defina a URL base aqui
+
+        function toggleFavorite(heartElement) {
+            const petId = heartElement.getAttribute('data-id'); // Obtém o ID do pet
+            console.log(petId);
+            fetch(`${API_BASE_URL}/favorite/${petId}`, {  // Use a URL base aqui
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Erro na requisição"); // Lança um erro se a resposta não for OK
+                }
+                return response.json(); // Converte a resposta para JSON
+            })
+            .then(data => {
+                const favoriteStatus = heartElement.closest('.card').querySelector('.favorite-status');
+                console.log(data)
+                if (data.success) {
+                    // Atualiza a classe do coração de acordo com o estado de favorito
+                    if (data.is_favorite) {
+                        heartElement.classList.add('favorited');
+                        favoriteStatus.textContent = "Sim"; // Muda para "Sim"
+                    } else {
+                        heartElement.classList.remove('favorited');
+                        favoriteStatus.textContent = "Não"; // Muda para "Não"
+                    }
+                } else {
+                    console.error("Erro ao favoritar o pet:", data.message);
+                }
+            })
+            .catch(error => console.error("Erro na requisição:", error));
+        }
+    </script>
+</body>
+</html>
